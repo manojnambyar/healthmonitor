@@ -22,7 +22,6 @@ void main() {
         InsulinLog(
           id: 'i1',
           timestamp: DateTime(2024, 1, 1, 7, 30),
-          insulinType: 'Rapid',
           doseUnits: 4,
           timePeriod: 'morning',
         ),
@@ -40,7 +39,6 @@ void main() {
 
     expect(content, contains('GlucoseSync Timeline Feed'));
     expect(content, contains('Breakfast'));
-    expect(content, contains('Rapid'));
     expect(content, contains('4.0U'));
     expect(content, contains('Pre-Meal'));
   });
