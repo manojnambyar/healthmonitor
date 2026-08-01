@@ -51,17 +51,6 @@ class $MealTableTable extends MealTable
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _estimatedCarbsMeta = const VerificationMeta(
-    'estimatedCarbs',
-  );
-  @override
-  late final GeneratedColumn<double> estimatedCarbs = GeneratedColumn<double>(
-    'estimated_carbs',
-    aliasedName,
-    true,
-    type: DriftSqlType.double,
-    requiredDuringInsert: false,
-  );
   static const VerificationMeta _isSyncedMeta = const VerificationMeta(
     'isSynced',
   );
@@ -83,7 +72,6 @@ class $MealTableTable extends MealTable
     timestamp,
     mealType,
     foodDescription,
-    estimatedCarbs,
     isSynced,
   ];
   @override
@@ -130,15 +118,6 @@ class $MealTableTable extends MealTable
     } else if (isInserting) {
       context.missing(_foodDescriptionMeta);
     }
-    if (data.containsKey('estimated_carbs')) {
-      context.handle(
-        _estimatedCarbsMeta,
-        estimatedCarbs.isAcceptableOrUnknown(
-          data['estimated_carbs']!,
-          _estimatedCarbsMeta,
-        ),
-      );
-    }
     if (data.containsKey('is_synced')) {
       context.handle(
         _isSyncedMeta,
@@ -170,10 +149,6 @@ class $MealTableTable extends MealTable
         DriftSqlType.string,
         data['${effectivePrefix}food_description'],
       )!,
-      estimatedCarbs: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}estimated_carbs'],
-      ),
       isSynced: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}is_synced'],
@@ -192,14 +167,12 @@ class MealTableData extends DataClass implements Insertable<MealTableData> {
   final DateTime timestamp;
   final String mealType;
   final String foodDescription;
-  final double? estimatedCarbs;
   final bool isSynced;
   const MealTableData({
     required this.id,
     required this.timestamp,
     required this.mealType,
     required this.foodDescription,
-    this.estimatedCarbs,
     required this.isSynced,
   });
   @override
@@ -209,9 +182,6 @@ class MealTableData extends DataClass implements Insertable<MealTableData> {
     map['timestamp'] = Variable<DateTime>(timestamp);
     map['meal_type'] = Variable<String>(mealType);
     map['food_description'] = Variable<String>(foodDescription);
-    if (!nullToAbsent || estimatedCarbs != null) {
-      map['estimated_carbs'] = Variable<double>(estimatedCarbs);
-    }
     map['is_synced'] = Variable<bool>(isSynced);
     return map;
   }
@@ -222,9 +192,6 @@ class MealTableData extends DataClass implements Insertable<MealTableData> {
       timestamp: Value(timestamp),
       mealType: Value(mealType),
       foodDescription: Value(foodDescription),
-      estimatedCarbs: estimatedCarbs == null && nullToAbsent
-          ? const Value.absent()
-          : Value(estimatedCarbs),
       isSynced: Value(isSynced),
     );
   }
@@ -239,7 +206,6 @@ class MealTableData extends DataClass implements Insertable<MealTableData> {
       timestamp: serializer.fromJson<DateTime>(json['timestamp']),
       mealType: serializer.fromJson<String>(json['mealType']),
       foodDescription: serializer.fromJson<String>(json['foodDescription']),
-      estimatedCarbs: serializer.fromJson<double?>(json['estimatedCarbs']),
       isSynced: serializer.fromJson<bool>(json['isSynced']),
     );
   }
@@ -251,7 +217,6 @@ class MealTableData extends DataClass implements Insertable<MealTableData> {
       'timestamp': serializer.toJson<DateTime>(timestamp),
       'mealType': serializer.toJson<String>(mealType),
       'foodDescription': serializer.toJson<String>(foodDescription),
-      'estimatedCarbs': serializer.toJson<double?>(estimatedCarbs),
       'isSynced': serializer.toJson<bool>(isSynced),
     };
   }
@@ -261,16 +226,12 @@ class MealTableData extends DataClass implements Insertable<MealTableData> {
     DateTime? timestamp,
     String? mealType,
     String? foodDescription,
-    Value<double?> estimatedCarbs = const Value.absent(),
     bool? isSynced,
   }) => MealTableData(
     id: id ?? this.id,
     timestamp: timestamp ?? this.timestamp,
     mealType: mealType ?? this.mealType,
     foodDescription: foodDescription ?? this.foodDescription,
-    estimatedCarbs: estimatedCarbs.present
-        ? estimatedCarbs.value
-        : this.estimatedCarbs,
     isSynced: isSynced ?? this.isSynced,
   );
   MealTableData copyWithCompanion(MealTableCompanion data) {
@@ -281,9 +242,6 @@ class MealTableData extends DataClass implements Insertable<MealTableData> {
       foodDescription: data.foodDescription.present
           ? data.foodDescription.value
           : this.foodDescription,
-      estimatedCarbs: data.estimatedCarbs.present
-          ? data.estimatedCarbs.value
-          : this.estimatedCarbs,
       isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
     );
   }
@@ -295,21 +253,14 @@ class MealTableData extends DataClass implements Insertable<MealTableData> {
           ..write('timestamp: $timestamp, ')
           ..write('mealType: $mealType, ')
           ..write('foodDescription: $foodDescription, ')
-          ..write('estimatedCarbs: $estimatedCarbs, ')
           ..write('isSynced: $isSynced')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
-    id,
-    timestamp,
-    mealType,
-    foodDescription,
-    estimatedCarbs,
-    isSynced,
-  );
+  int get hashCode =>
+      Object.hash(id, timestamp, mealType, foodDescription, isSynced);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -318,7 +269,6 @@ class MealTableData extends DataClass implements Insertable<MealTableData> {
           other.timestamp == this.timestamp &&
           other.mealType == this.mealType &&
           other.foodDescription == this.foodDescription &&
-          other.estimatedCarbs == this.estimatedCarbs &&
           other.isSynced == this.isSynced);
 }
 
@@ -327,7 +277,6 @@ class MealTableCompanion extends UpdateCompanion<MealTableData> {
   final Value<DateTime> timestamp;
   final Value<String> mealType;
   final Value<String> foodDescription;
-  final Value<double?> estimatedCarbs;
   final Value<bool> isSynced;
   final Value<int> rowid;
   const MealTableCompanion({
@@ -335,7 +284,6 @@ class MealTableCompanion extends UpdateCompanion<MealTableData> {
     this.timestamp = const Value.absent(),
     this.mealType = const Value.absent(),
     this.foodDescription = const Value.absent(),
-    this.estimatedCarbs = const Value.absent(),
     this.isSynced = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -344,7 +292,6 @@ class MealTableCompanion extends UpdateCompanion<MealTableData> {
     required DateTime timestamp,
     required String mealType,
     required String foodDescription,
-    this.estimatedCarbs = const Value.absent(),
     this.isSynced = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -356,7 +303,6 @@ class MealTableCompanion extends UpdateCompanion<MealTableData> {
     Expression<DateTime>? timestamp,
     Expression<String>? mealType,
     Expression<String>? foodDescription,
-    Expression<double>? estimatedCarbs,
     Expression<bool>? isSynced,
     Expression<int>? rowid,
   }) {
@@ -365,7 +311,6 @@ class MealTableCompanion extends UpdateCompanion<MealTableData> {
       if (timestamp != null) 'timestamp': timestamp,
       if (mealType != null) 'meal_type': mealType,
       if (foodDescription != null) 'food_description': foodDescription,
-      if (estimatedCarbs != null) 'estimated_carbs': estimatedCarbs,
       if (isSynced != null) 'is_synced': isSynced,
       if (rowid != null) 'rowid': rowid,
     });
@@ -376,7 +321,6 @@ class MealTableCompanion extends UpdateCompanion<MealTableData> {
     Value<DateTime>? timestamp,
     Value<String>? mealType,
     Value<String>? foodDescription,
-    Value<double?>? estimatedCarbs,
     Value<bool>? isSynced,
     Value<int>? rowid,
   }) {
@@ -385,7 +329,6 @@ class MealTableCompanion extends UpdateCompanion<MealTableData> {
       timestamp: timestamp ?? this.timestamp,
       mealType: mealType ?? this.mealType,
       foodDescription: foodDescription ?? this.foodDescription,
-      estimatedCarbs: estimatedCarbs ?? this.estimatedCarbs,
       isSynced: isSynced ?? this.isSynced,
       rowid: rowid ?? this.rowid,
     );
@@ -406,9 +349,6 @@ class MealTableCompanion extends UpdateCompanion<MealTableData> {
     if (foodDescription.present) {
       map['food_description'] = Variable<String>(foodDescription.value);
     }
-    if (estimatedCarbs.present) {
-      map['estimated_carbs'] = Variable<double>(estimatedCarbs.value);
-    }
     if (isSynced.present) {
       map['is_synced'] = Variable<bool>(isSynced.value);
     }
@@ -425,7 +365,6 @@ class MealTableCompanion extends UpdateCompanion<MealTableData> {
           ..write('timestamp: $timestamp, ')
           ..write('mealType: $mealType, ')
           ..write('foodDescription: $foodDescription, ')
-          ..write('estimatedCarbs: $estimatedCarbs, ')
           ..write('isSynced: $isSynced, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -457,17 +396,6 @@ class $InsulinTableTable extends InsulinTable
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _insulinTypeMeta = const VerificationMeta(
-    'insulinType',
-  );
-  @override
-  late final GeneratedColumn<String> insulinType = GeneratedColumn<String>(
-    'insulin_type',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
   static const VerificationMeta _doseUnitsMeta = const VerificationMeta(
@@ -509,7 +437,6 @@ class $InsulinTableTable extends InsulinTable
   List<GeneratedColumn> get $columns => [
     id,
     timestamp,
-    insulinType,
     doseUnits,
     notes,
     isSynced,
@@ -538,17 +465,6 @@ class $InsulinTableTable extends InsulinTable
       );
     } else if (isInserting) {
       context.missing(_timestampMeta);
-    }
-    if (data.containsKey('insulin_type')) {
-      context.handle(
-        _insulinTypeMeta,
-        insulinType.isAcceptableOrUnknown(
-          data['insulin_type']!,
-          _insulinTypeMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_insulinTypeMeta);
     }
     if (data.containsKey('dose_units')) {
       context.handle(
@@ -587,10 +503,6 @@ class $InsulinTableTable extends InsulinTable
         DriftSqlType.dateTime,
         data['${effectivePrefix}timestamp'],
       )!,
-      insulinType: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}insulin_type'],
-      )!,
       doseUnits: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}dose_units'],
@@ -616,14 +528,12 @@ class InsulinTableData extends DataClass
     implements Insertable<InsulinTableData> {
   final String id;
   final DateTime timestamp;
-  final String insulinType;
   final double doseUnits;
   final String? notes;
   final bool isSynced;
   const InsulinTableData({
     required this.id,
     required this.timestamp,
-    required this.insulinType,
     required this.doseUnits,
     this.notes,
     required this.isSynced,
@@ -633,7 +543,6 @@ class InsulinTableData extends DataClass
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['timestamp'] = Variable<DateTime>(timestamp);
-    map['insulin_type'] = Variable<String>(insulinType);
     map['dose_units'] = Variable<double>(doseUnits);
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
@@ -646,7 +555,6 @@ class InsulinTableData extends DataClass
     return InsulinTableCompanion(
       id: Value(id),
       timestamp: Value(timestamp),
-      insulinType: Value(insulinType),
       doseUnits: Value(doseUnits),
       notes: notes == null && nullToAbsent
           ? const Value.absent()
@@ -663,7 +571,6 @@ class InsulinTableData extends DataClass
     return InsulinTableData(
       id: serializer.fromJson<String>(json['id']),
       timestamp: serializer.fromJson<DateTime>(json['timestamp']),
-      insulinType: serializer.fromJson<String>(json['insulinType']),
       doseUnits: serializer.fromJson<double>(json['doseUnits']),
       notes: serializer.fromJson<String?>(json['notes']),
       isSynced: serializer.fromJson<bool>(json['isSynced']),
@@ -675,7 +582,6 @@ class InsulinTableData extends DataClass
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'timestamp': serializer.toJson<DateTime>(timestamp),
-      'insulinType': serializer.toJson<String>(insulinType),
       'doseUnits': serializer.toJson<double>(doseUnits),
       'notes': serializer.toJson<String?>(notes),
       'isSynced': serializer.toJson<bool>(isSynced),
@@ -685,14 +591,12 @@ class InsulinTableData extends DataClass
   InsulinTableData copyWith({
     String? id,
     DateTime? timestamp,
-    String? insulinType,
     double? doseUnits,
     Value<String?> notes = const Value.absent(),
     bool? isSynced,
   }) => InsulinTableData(
     id: id ?? this.id,
     timestamp: timestamp ?? this.timestamp,
-    insulinType: insulinType ?? this.insulinType,
     doseUnits: doseUnits ?? this.doseUnits,
     notes: notes.present ? notes.value : this.notes,
     isSynced: isSynced ?? this.isSynced,
@@ -701,9 +605,6 @@ class InsulinTableData extends DataClass
     return InsulinTableData(
       id: data.id.present ? data.id.value : this.id,
       timestamp: data.timestamp.present ? data.timestamp.value : this.timestamp,
-      insulinType: data.insulinType.present
-          ? data.insulinType.value
-          : this.insulinType,
       doseUnits: data.doseUnits.present ? data.doseUnits.value : this.doseUnits,
       notes: data.notes.present ? data.notes.value : this.notes,
       isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
@@ -715,7 +616,6 @@ class InsulinTableData extends DataClass
     return (StringBuffer('InsulinTableData(')
           ..write('id: $id, ')
           ..write('timestamp: $timestamp, ')
-          ..write('insulinType: $insulinType, ')
           ..write('doseUnits: $doseUnits, ')
           ..write('notes: $notes, ')
           ..write('isSynced: $isSynced')
@@ -724,15 +624,13 @@ class InsulinTableData extends DataClass
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, timestamp, insulinType, doseUnits, notes, isSynced);
+  int get hashCode => Object.hash(id, timestamp, doseUnits, notes, isSynced);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is InsulinTableData &&
           other.id == this.id &&
           other.timestamp == this.timestamp &&
-          other.insulinType == this.insulinType &&
           other.doseUnits == this.doseUnits &&
           other.notes == this.notes &&
           other.isSynced == this.isSynced);
@@ -741,7 +639,6 @@ class InsulinTableData extends DataClass
 class InsulinTableCompanion extends UpdateCompanion<InsulinTableData> {
   final Value<String> id;
   final Value<DateTime> timestamp;
-  final Value<String> insulinType;
   final Value<double> doseUnits;
   final Value<String?> notes;
   final Value<bool> isSynced;
@@ -749,7 +646,6 @@ class InsulinTableCompanion extends UpdateCompanion<InsulinTableData> {
   const InsulinTableCompanion({
     this.id = const Value.absent(),
     this.timestamp = const Value.absent(),
-    this.insulinType = const Value.absent(),
     this.doseUnits = const Value.absent(),
     this.notes = const Value.absent(),
     this.isSynced = const Value.absent(),
@@ -758,19 +654,16 @@ class InsulinTableCompanion extends UpdateCompanion<InsulinTableData> {
   InsulinTableCompanion.insert({
     required String id,
     required DateTime timestamp,
-    required String insulinType,
     required double doseUnits,
     this.notes = const Value.absent(),
     this.isSynced = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        timestamp = Value(timestamp),
-       insulinType = Value(insulinType),
        doseUnits = Value(doseUnits);
   static Insertable<InsulinTableData> custom({
     Expression<String>? id,
     Expression<DateTime>? timestamp,
-    Expression<String>? insulinType,
     Expression<double>? doseUnits,
     Expression<String>? notes,
     Expression<bool>? isSynced,
@@ -779,7 +672,6 @@ class InsulinTableCompanion extends UpdateCompanion<InsulinTableData> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (timestamp != null) 'timestamp': timestamp,
-      if (insulinType != null) 'insulin_type': insulinType,
       if (doseUnits != null) 'dose_units': doseUnits,
       if (notes != null) 'notes': notes,
       if (isSynced != null) 'is_synced': isSynced,
@@ -790,7 +682,6 @@ class InsulinTableCompanion extends UpdateCompanion<InsulinTableData> {
   InsulinTableCompanion copyWith({
     Value<String>? id,
     Value<DateTime>? timestamp,
-    Value<String>? insulinType,
     Value<double>? doseUnits,
     Value<String?>? notes,
     Value<bool>? isSynced,
@@ -799,7 +690,6 @@ class InsulinTableCompanion extends UpdateCompanion<InsulinTableData> {
     return InsulinTableCompanion(
       id: id ?? this.id,
       timestamp: timestamp ?? this.timestamp,
-      insulinType: insulinType ?? this.insulinType,
       doseUnits: doseUnits ?? this.doseUnits,
       notes: notes ?? this.notes,
       isSynced: isSynced ?? this.isSynced,
@@ -815,9 +705,6 @@ class InsulinTableCompanion extends UpdateCompanion<InsulinTableData> {
     }
     if (timestamp.present) {
       map['timestamp'] = Variable<DateTime>(timestamp.value);
-    }
-    if (insulinType.present) {
-      map['insulin_type'] = Variable<String>(insulinType.value);
     }
     if (doseUnits.present) {
       map['dose_units'] = Variable<double>(doseUnits.value);
@@ -839,7 +726,6 @@ class InsulinTableCompanion extends UpdateCompanion<InsulinTableData> {
     return (StringBuffer('InsulinTableCompanion(')
           ..write('id: $id, ')
           ..write('timestamp: $timestamp, ')
-          ..write('insulinType: $insulinType, ')
           ..write('doseUnits: $doseUnits, ')
           ..write('notes: $notes, ')
           ..write('isSynced: $isSynced, ')
@@ -1334,7 +1220,6 @@ typedef $$MealTableTableCreateCompanionBuilder =
       required DateTime timestamp,
       required String mealType,
       required String foodDescription,
-      Value<double?> estimatedCarbs,
       Value<bool> isSynced,
       Value<int> rowid,
     });
@@ -1344,7 +1229,6 @@ typedef $$MealTableTableUpdateCompanionBuilder =
       Value<DateTime> timestamp,
       Value<String> mealType,
       Value<String> foodDescription,
-      Value<double?> estimatedCarbs,
       Value<bool> isSynced,
       Value<int> rowid,
     });
@@ -1375,11 +1259,6 @@ class $$MealTableTableFilterComposer
 
   ColumnFilters<String> get foodDescription => $composableBuilder(
     column: $table.foodDescription,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get estimatedCarbs => $composableBuilder(
-    column: $table.estimatedCarbs,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1418,11 +1297,6 @@ class $$MealTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<double> get estimatedCarbs => $composableBuilder(
-    column: $table.estimatedCarbs,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<bool> get isSynced => $composableBuilder(
     column: $table.isSynced,
     builder: (column) => ColumnOrderings(column),
@@ -1449,11 +1323,6 @@ class $$MealTableTableAnnotationComposer
 
   GeneratedColumn<String> get foodDescription => $composableBuilder(
     column: $table.foodDescription,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<double> get estimatedCarbs => $composableBuilder(
-    column: $table.estimatedCarbs,
     builder: (column) => column,
   );
 
@@ -1496,7 +1365,6 @@ class $$MealTableTableTableManager
                 Value<DateTime> timestamp = const Value.absent(),
                 Value<String> mealType = const Value.absent(),
                 Value<String> foodDescription = const Value.absent(),
-                Value<double?> estimatedCarbs = const Value.absent(),
                 Value<bool> isSynced = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MealTableCompanion(
@@ -1504,7 +1372,6 @@ class $$MealTableTableTableManager
                 timestamp: timestamp,
                 mealType: mealType,
                 foodDescription: foodDescription,
-                estimatedCarbs: estimatedCarbs,
                 isSynced: isSynced,
                 rowid: rowid,
               ),
@@ -1514,7 +1381,6 @@ class $$MealTableTableTableManager
                 required DateTime timestamp,
                 required String mealType,
                 required String foodDescription,
-                Value<double?> estimatedCarbs = const Value.absent(),
                 Value<bool> isSynced = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MealTableCompanion.insert(
@@ -1522,7 +1388,6 @@ class $$MealTableTableTableManager
                 timestamp: timestamp,
                 mealType: mealType,
                 foodDescription: foodDescription,
-                estimatedCarbs: estimatedCarbs,
                 isSynced: isSynced,
                 rowid: rowid,
               ),
@@ -1555,7 +1420,6 @@ typedef $$InsulinTableTableCreateCompanionBuilder =
     InsulinTableCompanion Function({
       required String id,
       required DateTime timestamp,
-      required String insulinType,
       required double doseUnits,
       Value<String?> notes,
       Value<bool> isSynced,
@@ -1565,7 +1429,6 @@ typedef $$InsulinTableTableUpdateCompanionBuilder =
     InsulinTableCompanion Function({
       Value<String> id,
       Value<DateTime> timestamp,
-      Value<String> insulinType,
       Value<double> doseUnits,
       Value<String?> notes,
       Value<bool> isSynced,
@@ -1588,11 +1451,6 @@ class $$InsulinTableTableFilterComposer
 
   ColumnFilters<DateTime> get timestamp => $composableBuilder(
     column: $table.timestamp,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get insulinType => $composableBuilder(
-    column: $table.insulinType,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1631,11 +1489,6 @@ class $$InsulinTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get insulinType => $composableBuilder(
-    column: $table.insulinType,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<double> get doseUnits => $composableBuilder(
     column: $table.doseUnits,
     builder: (column) => ColumnOrderings(column),
@@ -1666,11 +1519,6 @@ class $$InsulinTableTableAnnotationComposer
 
   GeneratedColumn<DateTime> get timestamp =>
       $composableBuilder(column: $table.timestamp, builder: (column) => column);
-
-  GeneratedColumn<String> get insulinType => $composableBuilder(
-    column: $table.insulinType,
-    builder: (column) => column,
-  );
 
   GeneratedColumn<double> get doseUnits =>
       $composableBuilder(column: $table.doseUnits, builder: (column) => column);
@@ -1715,7 +1563,6 @@ class $$InsulinTableTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<DateTime> timestamp = const Value.absent(),
-                Value<String> insulinType = const Value.absent(),
                 Value<double> doseUnits = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<bool> isSynced = const Value.absent(),
@@ -1723,7 +1570,6 @@ class $$InsulinTableTableTableManager
               }) => InsulinTableCompanion(
                 id: id,
                 timestamp: timestamp,
-                insulinType: insulinType,
                 doseUnits: doseUnits,
                 notes: notes,
                 isSynced: isSynced,
@@ -1733,7 +1579,6 @@ class $$InsulinTableTableTableManager
               ({
                 required String id,
                 required DateTime timestamp,
-                required String insulinType,
                 required double doseUnits,
                 Value<String?> notes = const Value.absent(),
                 Value<bool> isSynced = const Value.absent(),
@@ -1741,7 +1586,6 @@ class $$InsulinTableTableTableManager
               }) => InsulinTableCompanion.insert(
                 id: id,
                 timestamp: timestamp,
-                insulinType: insulinType,
                 doseUnits: doseUnits,
                 notes: notes,
                 isSynced: isSynced,

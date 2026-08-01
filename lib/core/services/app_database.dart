@@ -9,7 +9,6 @@ class MealTable extends Table {
   DateTimeColumn get timestamp => dateTime()();
   TextColumn get mealType => text()();
   TextColumn get foodDescription => text()();
-  RealColumn get estimatedCarbs => real().nullable()();
   BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
 
   @override
@@ -19,7 +18,6 @@ class MealTable extends Table {
 class InsulinTable extends Table {
   TextColumn get id => text()();
   DateTimeColumn get timestamp => dateTime()();
-  TextColumn get insulinType => text()();
   RealColumn get doseUnits => real()();
   TextColumn get notes => text().nullable()();
   BoolColumn get isSynced => boolean().withDefault(const Constant(false))();

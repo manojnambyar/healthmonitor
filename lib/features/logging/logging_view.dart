@@ -22,7 +22,6 @@ class _LoggingViewState extends State<LoggingView> {
   DateTime _selectedTime = DateTime.now();
   String _mealType = 'Breakfast';
   final TextEditingController _foodController = TextEditingController();
-  final TextEditingController _carbsController = TextEditingController();
   final TextEditingController _insulinDoseController = TextEditingController();
   final TextEditingController _insulinNotesController = TextEditingController();
   final TextEditingController _glucoseController = TextEditingController();
@@ -48,7 +47,6 @@ class _LoggingViewState extends State<LoggingView> {
   @override
   void dispose() {
     _foodController.dispose();
-    _carbsController.dispose();
     _insulinDoseController.dispose();
     _insulinNotesController.dispose();
     _glucoseController.dispose();
@@ -70,12 +68,10 @@ class _LoggingViewState extends State<LoggingView> {
       timestamp: _selectedTime,
       mealType: _mealType,
       foodDescription: _foodController.text.trim(),
-      estimatedCarbs: double.tryParse(_carbsController.text),
       timePeriod: _mealPeriod,
     );
     await _storage.addMeal(meal);
     _foodController.clear();
-    _carbsController.clear();
     await _refreshMeals();
     _showSnack('Meal logged locally.', success: true);
   }
@@ -93,7 +89,6 @@ class _LoggingViewState extends State<LoggingView> {
     final insulin = InsulinLog(
       id: _uuid.v4(),
       timestamp: _selectedTime,
-      insulinType: _insulinType,
       doseUnits: dose,
       notes: _insulinNotesController.text.trim().isEmpty
           ? null
@@ -263,15 +258,6 @@ class _LoggingViewState extends State<LoggingView> {
           const SizedBox(height: 16),
           _timePeriodDropdown(value: _insulinPeriod, onChanged: (value) => setState(() => _insulinPeriod = value)),
           const SizedBox(height: 16),
-          DropdownButtonFormField<String>(
-            initialValue: _insulinType,
-            items: ['Rapid-acting', 'Short-acting', 'Long-acting']
-                .map((value) => DropdownMenuItem(value: value, child: Text(value)))
-                .toList(),
-            onChanged: (value) => setState(() => _insulinType = value ?? _insulinType),
-            decoration: const InputDecoration(labelText: 'Insulin type'),
-          ),
-          const SizedBox(height: 16),
           TextField(
             controller: _insulinDoseController,
             keyboardType: TextInputType.number,
@@ -321,12 +307,6 @@ class _LoggingViewState extends State<LoggingView> {
           ),
           const SizedBox(height: 16),
           TextField(controller: _foodController, decoration: const InputDecoration(labelText: 'Food description')),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _carbsController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Estimated carbs (g)'),
-          ),
           const SizedBox(height: 16),
           _saveButton(
             onPressed: _saveMeal,

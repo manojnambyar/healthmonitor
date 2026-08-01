@@ -59,7 +59,7 @@ class TimelineExportService {
       }
       if (group.insulins.isNotEmpty) {
         for (final insulin in group.insulins) {
-          buffer.writeln('  Insulin: ${insulin.insulinType} - ${insulin.doseUnits.toStringAsFixed(1)}U');
+          buffer.writeln('  Insulin: ${insulin.doseUnits.toStringAsFixed(1)}U');
         }
       }
       if (group.bloodSugars.isNotEmpty) {

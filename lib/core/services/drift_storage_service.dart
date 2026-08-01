@@ -16,14 +16,12 @@ class DriftStorageService {
         timestamp: Value(log.timestamp),
         mealType: Value(_withPeriod(log.mealType, log.timePeriod)),
         foodDescription: Value(log.foodDescription),
-        estimatedCarbs: Value(log.estimatedCarbs),
         isSynced: Value(log.isSynced),
       ));
 
   Future<void> addInsulin(InsulinLog log) => db.insertInsulin(InsulinTableCompanion(
         id: Value(log.id),
         timestamp: Value(log.timestamp),
-        insulinType: Value(log.insulinType),
         doseUnits: Value(log.doseUnits),
         notes: Value(_withPeriod(log.notes ?? '', log.timePeriod)),
         isSynced: Value(log.isSynced),
@@ -48,7 +46,6 @@ class DriftStorageService {
         timestamp: row.timestamp,
         mealType: data.value,
         foodDescription: row.foodDescription,
-        estimatedCarbs: row.estimatedCarbs,
         timePeriod: data.period,
         isSynced: row.isSynced,
       );
@@ -62,7 +59,6 @@ class DriftStorageService {
       return InsulinLog(
         id: row.id,
         timestamp: row.timestamp,
-        insulinType: row.insulinType,
         doseUnits: row.doseUnits,
         notes: data.value.isEmpty ? null : data.value,
         timePeriod: data.period,
