@@ -50,23 +50,29 @@ class TimelineExportService {
       return buffer.toString();
     }
 
+    buffer.writeln('Time | Insulin | Pre | Post');
+    buffer.writeln('-----|---------|-----|-----');
+
     for (final group in groups) {
-      buffer.writeln('${_formatDate(group.timestamp)} • ${group.timePeriod.toUpperCase()}');
-      if (group.meals.isNotEmpty) {
-        for (final meal in group.meals) {
-          buffer.writeln('  Meal: ${meal.mealType} - ${meal.foodDescription}');
+      buffer.writeln('Date: ${_formatDateHeader(group.timestamp)}');
+      final rows = <String>[];
+
+      for (final meal in group.meals) {
+        rows.add('${_formatTime(meal.timestamp)} | ${_formatInsulin(group.insulins)} | ${_formatPre(group.bloodSugars)} | ${_formatPost(group.bloodSugars)} | ${meal.mealType}: ${meal.foodDescription}');
+      }
+
+      if (rows.isEmpty) {
+        if (group.insulins.isNotEmpty || group.bloodSugars.isNotEmpty) {
+          rows.add('${_formatTime(group.insulins.isNotEmpty ? group.insulins.first.timestamp : group.bloodSugars.first.timestamp)} | ${_formatInsulin(group.insulins)} | ${_formatPre(group.bloodSugars)} | ${_formatPost(group.bloodSugars)} | —');
         }
       }
-      if (group.insulins.isNotEmpty) {
-        for (final insulin in group.insulins) {
-          buffer.writeln('  Insulin: ${insulin.doseUnits.toStringAsFixed(1)}U');
+
+      if (rows.isNotEmpty) {
+        for (final row in rows) {
+          buffer.writeln(row);
         }
       }
-      if (group.bloodSugars.isNotEmpty) {
-        for (final reading in group.bloodSugars) {
-          buffer.writeln('  ${reading.readingType}: ${reading.value.toStringAsFixed(0)} mg/dL');
-        }
-      }
+
       buffer.writeln('');
     }
 
@@ -75,7 +81,15 @@ class TimelineExportService {
 
   String _period(DateTime time) => time.hour < 12 ? 'morning' : time.hour < 18 ? 'afternoon' : 'night';
 
-  String _formatDate(DateTime time) => '${time.day.toString().padLeft(2, '0')} ${const ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][time.month - 1]} ${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  String _formatDateHeader(DateTime time) => '${time.day.toString().padLeft(2, '0')} ${const ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][time.month - 1]} ${time.year}';
+
+  String _formatTime(DateTime time) => '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+
+  String _formatInsulin(List<InsulinLog> insulins) => insulins.isEmpty ? '—' : insulins.map((item) => item.doseUnits.toStringAsFixed(1)).join(', ');
+
+  String _formatPre(List<BloodSugarLog> bloodSugars) => bloodSugars.where((item) => item.readingType == 'Pre-Meal').map((item) => item.value.toStringAsFixed(0)).join(', ');
+
+  String _formatPost(List<BloodSugarLog> bloodSugars) => bloodSugars.where((item) => item.readingType == 'Post-Meal').map((item) => item.value.toStringAsFixed(0)).join(', ');
 }
 
 class _TimelineExportGroup {

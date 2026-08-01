@@ -33,7 +33,6 @@ class _LoggingViewState extends State<LoggingView> {
   String? _mealPeriod;
   String? _glucosePeriod;
   String? _selectedMealId;
-  bool _isUnitsMmoll = false;
   bool _showTimingMessage = false;
   String _timingMessage = '';
 
@@ -357,12 +356,6 @@ class _LoggingViewState extends State<LoggingView> {
           ),
           const SizedBox(height: 16),
           TextField(controller: _glucoseNotesController, decoration: const InputDecoration(labelText: 'Notes')),
-          const SizedBox(height: 16),
-          SwitchListTile.adaptive(
-            value: _isUnitsMmoll,
-            title: const Text('Show mmol/L'),
-            onChanged: (value) => setState(() => _isUnitsMmoll = value),
-          ),
           const SizedBox(height: 16),
           _saveButton(
             onPressed: _saveBloodSugar,

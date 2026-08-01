@@ -5,7 +5,7 @@ import 'package:healthmonitor/core/models/meal_log.dart';
 import 'package:healthmonitor/features/dashboard/timeline_export_service.dart';
 
 void main() {
-  test('buildPlainTextContent formats a readable timeline export', () {
+  test('buildPlainTextContent formats a dashboard-style export grouped by date', () {
     final service = TimelineExportService();
 
     final content = service.buildPlainTextContent(
@@ -38,9 +38,10 @@ void main() {
     );
 
     expect(content, contains('GlucoseSync Timeline Feed'));
-    expect(content, contains('Breakfast'));
-    expect(content, contains('4.0U'));
-    expect(content, contains('Pre-Meal'));
+    expect(content, contains('Date: 01 Jan 2024'));
+    expect(content, contains('Breakfast: Toast and fruit'));
+    expect(content, contains('4.0'));
+    expect(content, contains('110'));
   });
 
   test('orders later timeline entries above older ones for the same day and period', () {
@@ -67,11 +68,40 @@ void main() {
       bloodSugars: const [],
     );
 
-    final breakfastIndex = content.indexOf('Breakfast');
-    final lunchIndex = content.indexOf('Lunch');
+    final breakfastIndex = content.indexOf('Breakfast: Toast and fruit');
+    final lunchIndex = content.indexOf('Lunch: Salad');
 
     expect(breakfastIndex, isNot(-1));
     expect(lunchIndex, isNot(-1));
     expect(lunchIndex, lessThan(breakfastIndex));
+  });
+
+  test('writes the header once before the date sections', () {
+    final service = TimelineExportService();
+
+    final content = service.buildPlainTextContent(
+      meals: [
+        MealLog(
+          id: 'm1',
+          timestamp: DateTime(2024, 1, 1, 8, 0),
+          mealType: 'Breakfast',
+          foodDescription: 'Toast and fruit',
+          timePeriod: 'morning',
+        ),
+        MealLog(
+          id: 'm2',
+          timestamp: DateTime(2024, 1, 2, 9, 0),
+          mealType: 'Lunch',
+          foodDescription: 'Salad',
+          timePeriod: 'morning',
+        ),
+      ],
+      insulins: const [],
+      bloodSugars: const [],
+    );
+
+    expect(content.split('Time | Insulin | Pre | Post').length - 1, 1);
+    expect(content, contains('Date: 01 Jan 2024'));
+    expect(content, contains('Date: 02 Jan 2024'));
   });
 }
