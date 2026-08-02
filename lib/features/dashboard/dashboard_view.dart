@@ -164,12 +164,12 @@ class _DashboardViewState extends State<DashboardView> {
       elevation: 2,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(
           color: Colors.green.shade700,
           padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 18),
           child: Row(children: [
-            const Expanded(child: Text('Timeline feed', style: TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.bold))),
+            const Text('Timeline feed', style: TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.bold)),
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert, color: Colors.white),
               onSelected: (value) async {

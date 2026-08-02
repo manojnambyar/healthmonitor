@@ -32,11 +32,12 @@ class TimelineExportService {
     }
 
     groups.addAll(map.values);
-    groups.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    // Sort groups chronologically (oldest first) for a logical timeline view
+    groups.sort((a, b) => a.timestamp.compareTo(b.timestamp));
     for (final group in groups) {
-      group.meals.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-      group.insulins.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-      group.bloodSugars.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      group.meals.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      group.insulins.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      group.bloodSugars.sort((a, b) => a.timestamp.compareTo(b.timestamp));
     }
 
     final buffer = StringBuffer();
@@ -49,31 +50,40 @@ class TimelineExportService {
       return buffer.toString();
     }
 
-    buffer.writeln('Time | Insulin | Pre | Post');
-    buffer.writeln('-----|---------|-----|-----');
+    // Updated header to include a fifth column for details like meal descriptions
+    buffer.writeln('Time | Insulin | Pre | Post | Details');
+    buffer.writeln('-----|---------|-----|-----|-------');
 
     for (final group in groups) {
-      buffer.writeln('Date: ${_formatDateHeader(group.timestamp)}');
       final rows = <String>[];
 
-      final insulinRows = group.insulins.map((insulin) => '${_formatTime(insulin.timestamp)} | ${_formatInsulinValue(insulin)} | — | —').toList();
-      final prePostRows = group.bloodSugars.map((reading) => '${_formatTime(reading.timestamp)} | — | ${reading.readingType == 'Pre-Meal' ? reading.value.toStringAsFixed(0) : '—'} | ${reading.readingType == 'Post-Meal' ? reading.value.toStringAsFixed(0) : '—'}').toList();
-      final mealRows = group.meals.map((meal) => '${_formatTime(meal.timestamp)} | — | — | — | ${meal.mealType}: ${meal.foodDescription}').toList();
-
+      // Insulin rows: include placeholder for Details column
+      final insulinRows = group.insulins.map((insulin) => 
+        '${_formatTime(insulin.timestamp)} | ${_formatInsulinValue(insulin)} | — | — | — '
+      ).toList();
       rows.addAll(insulinRows);
+
+      // Blood sugar rows: include placeholder for Details column
+      final prePostRows = group.bloodSugars.map((reading) => 
+        '${_formatTime(reading.timestamp)} | — | ${reading.readingType == 'Pre-Meal' ? reading.value.toStringAsFixed(0) : '—'} | ${reading.readingType == 'Post-Meal' ? reading.value.toStringAsFixed(0) : '—'} | — '
+      ).toList();
       rows.addAll(prePostRows);
+
+      // Meal rows: place description in the Details column
+      final mealRows = group.meals.map((meal) => 
+        '${_formatTime(meal.timestamp)} | — | — | — | ${meal.mealType}: ${meal.foodDescription}'
+      ).toList();
       rows.addAll(mealRows);
 
       if (rows.isEmpty) {
-        rows.add('— | — | — | —');
+        rows.add('— | — | — | — | — ');
       }
 
-      if (rows.isNotEmpty) {
-        for (final row in rows) {
-          buffer.writeln(row);
-        }
+      for (final row in rows) {
+        buffer.writeln(row);
       }
 
+      // Add a blank line between groups for readability
       buffer.writeln('');
     }
 
