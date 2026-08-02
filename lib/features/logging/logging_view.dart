@@ -27,7 +27,6 @@ class _LoggingViewState extends State<LoggingView> {
   final TextEditingController _glucoseController = TextEditingController();
   final TextEditingController _glucoseNotesController = TextEditingController();
   Future<List<MealLog>>? _mealsFuture;
-  String _insulinType = 'Rapid-acting';
   String? _glucoseType;
   String? _insulinPeriod;
   String? _mealPeriod;
@@ -85,6 +84,19 @@ class _LoggingViewState extends State<LoggingView> {
       _showSnack('Please choose a time period.');
       return;
     }
+
+    final existingInsulins = await _storage.getInsulins();
+    final alreadyExists = existingInsulins.any((log) =>
+        log.timestamp.year == _selectedTime.year &&
+        log.timestamp.month == _selectedTime.month &&
+        log.timestamp.day == _selectedTime.day &&
+        log.timePeriod?.toLowerCase() == _insulinPeriod?.toLowerCase());
+
+    if (alreadyExists) {
+      _showSnack('An insulin dose has already been logged for this period.');
+      return;
+    }
+
     final insulin = InsulinLog(
       id: _uuid.v4(),
       timestamp: _selectedTime,
@@ -418,16 +430,15 @@ class _LoggingViewState extends State<LoggingView> {
     return InkWell(
       onTap: () async {
         if (!mounted) return;
-        final localContext = context;
         final date = await showDatePicker(
-          context: localContext,
+          context: context,
           initialDate: _selectedTime,
           firstDate: DateTime(2020),
           lastDate: DateTime(2100),
         );
         if (!mounted || date == null) return;
         final time = await showTimePicker(
-          context: localContext,
+          context: context,
           initialTime: TimeOfDay.fromDateTime(_selectedTime),
         );
         if (!mounted || time == null) return;

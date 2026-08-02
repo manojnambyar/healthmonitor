@@ -53,8 +53,14 @@ class TimelineExportService {
     buffer.writeln('Time | Insulin | Pre | Post');
     buffer.writeln('-----|---------|-----|-----');
 
+    DateTime? lastDate;
     for (final group in groups) {
-      buffer.writeln('Date: ${_formatDateHeader(group.timestamp)}');
+      final currentDate = DateTime(group.timestamp.year, group.timestamp.month, group.timestamp.day);
+      if (lastDate == null || currentDate != lastDate) {
+        buffer.writeln('Date: ${_formatDateHeader(group.timestamp)}');
+        lastDate = currentDate;
+      }
+      
       final rows = <String>[];
 
       for (final meal in group.meals) {
@@ -72,8 +78,6 @@ class TimelineExportService {
           buffer.writeln(row);
         }
       }
-
-      buffer.writeln('');
     }
 
     return buffer.toString();
@@ -85,7 +89,7 @@ class TimelineExportService {
 
   String _formatTime(DateTime time) => '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
 
-  String _formatInsulin(List<InsulinLog> insulins) => insulins.isEmpty ? '—' : insulins.map((item) => item.doseUnits.toStringAsFixed(1)).join(', ');
+  String _formatInsulin(List<InsulinLog> insulins) => insulins.isEmpty ? '—' : insulins.first.doseUnits.toStringAsFixed(1);
 
   String _formatPre(List<BloodSugarLog> bloodSugars) => bloodSugars.where((item) => item.readingType == 'Pre-Meal').map((item) => item.value.toStringAsFixed(0)).join(', ');
 

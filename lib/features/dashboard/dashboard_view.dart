@@ -196,7 +196,7 @@ class _DashboardViewState extends State<DashboardView> {
   }
 
   Widget _timelineHeader() => const Row(children: [
-        Expanded(flex: 4, child: Text('Date / time range & meal', style: TextStyle(fontWeight: FontWeight.bold))),
+        Expanded(flex: 4, child: Text('Time range & meal', style: TextStyle(fontWeight: FontWeight.bold))),
         Expanded(child: Text('Insulin', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold))),
         Expanded(child: Text('Pre', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold))),
         Expanded(child: Text('Post', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold))),
@@ -224,21 +224,44 @@ class _DashboardViewState extends State<DashboardView> {
       group.insulins.sort((a, b) => b.timestamp.compareTo(a.timestamp));
       group.bloodSugars.sort((a, b) => b.timestamp.compareTo(a.timestamp));
     }
-    return groups.map((group) {
-      final insulin = group.insulins.isEmpty ? '—' : group.insulins.map((item) => item.doseUnits.toStringAsFixed(0)).join(', ');
+
+    final List<Widget> items = [];
+    DateTime? lastDate;
+
+    for (final group in groups) {
+      final currentDate = DateTime(group.latestTime.year, group.latestTime.month, group.latestTime.day);
+      if (lastDate == null || currentDate != lastDate) {
+        if (lastDate != null) items.add(const Divider(height: 24, thickness: 0.5));
+        items.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              _formatDay(currentDate),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.green.shade800),
+            ),
+          ),
+        );
+        lastDate = currentDate;
+      }
+
+      final insulin = group.insulins.isEmpty ? '—' : group.insulins.first.doseUnits.toStringAsFixed(0);
       final pre = group.bloodSugars.where((item) => item.readingType == 'Pre-Meal').map((item) => item.value.toStringAsFixed(0)).join(', ');
       final post = group.bloodSugars.where((item) => item.readingType == 'Post-Meal').map((item) => item.value.toStringAsFixed(0)).join(', ');
       final detail = group.meals.isEmpty ? 'No meal recorded' : group.meals.map((meal) => '${meal.mealType}: ${meal.foodDescription}').join(' · ');
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 7),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Expanded(flex: 4, child: Text('${_formatRange(group.earliestTime, group.latestTime)} · ${group.timePeriod}\n$detail')),
-          Expanded(child: Text(insulin, textAlign: TextAlign.center)),
-          Expanded(child: Text(pre.isEmpty ? '—' : pre, textAlign: TextAlign.center)),
-          Expanded(child: Text(post.isEmpty ? '—' : post, textAlign: TextAlign.center)),
-        ]),
+      
+      items.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 7),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(flex: 4, child: Text('${_formatShortRange(group.earliestTime, group.latestTime)} · ${group.timePeriod}\n$detail')),
+            Expanded(child: Text(insulin, textAlign: TextAlign.center)),
+            Expanded(child: Text(pre.isEmpty ? '—' : pre, textAlign: TextAlign.center)),
+            Expanded(child: Text(post.isEmpty ? '—' : post, textAlign: TextAlign.center)),
+          ]),
+        ),
       );
-    }).toList();
+    }
+    return items;
   }
 
   Future<void> _exportTimelinePdf(String content) async {
@@ -286,8 +309,13 @@ class _DashboardViewState extends State<DashboardView> {
 
   String _number(double? value) => value == null ? '—' : value.toStringAsFixed(2);
   String _formatDate(DateTime time) => '${time.day.toString().padLeft(2, '0')} ${const ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][time.month - 1]} ${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  String _formatDay(DateTime time) => '${time.day.toString().padLeft(2, '0')} ${const ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][time.month - 1]} ${time.year}';
+  String _formatTimeOnly(DateTime time) => '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   String _formatRange(DateTime start, DateTime end) => start.year == end.year && start.month == end.month && start.day == end.day
       ? '${_formatDate(start)}–${end.hour.toString().padLeft(2, '0')}:${end.minute.toString().padLeft(2, '0')}'
+      : '${_formatDate(start)}–${_formatDate(end)}';
+  String _formatShortRange(DateTime start, DateTime end) => start.year == end.year && start.month == end.month && start.day == end.day
+      ? '${_formatTimeOnly(start)}–${_formatTimeOnly(end)}'
       : '${_formatDate(start)}–${_formatDate(end)}';
   String _period(DateTime time) => time.hour < 12 ? 'morning' : time.hour < 18 ? 'afternoon' : 'night';
 }
