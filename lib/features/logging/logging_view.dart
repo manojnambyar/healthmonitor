@@ -27,7 +27,7 @@ class _LoggingViewState extends State<LoggingView> {
   final TextEditingController _glucoseController = TextEditingController();
   final TextEditingController _glucoseNotesController = TextEditingController();
   Future<List<MealLog>>? _mealsFuture;
-  String _insulinType = 'Rapid-acting';
+  final String _insulinType = 'Rapid-acting';
   String? _glucoseType;
   String? _insulinPeriod;
   String? _mealPeriod;

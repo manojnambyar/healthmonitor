@@ -203,40 +203,47 @@ class _DashboardViewState extends State<DashboardView> {
       ]);
 
   List<Widget> _timelineRows(List<MealLog> meals, List<InsulinLog> insulins, List<BloodSugarLog> bloodSugars) {
-    final groupsByPeriod = <String, _TimelineGroup>{};
-    _TimelineGroup groupFor(DateTime timestamp, String? selectedPeriod) {
-      final period = selectedPeriod ?? _period(timestamp);
-      final key = '${timestamp.year}-${timestamp.month}-${timestamp.day}-$period';
-      return groupsByPeriod.putIfAbsent(key, () => _TimelineGroup(timePeriod: period));
+    final groupsByDate = <String, _TimelineGroup>{};
+    _TimelineGroup groupFor(DateTime timestamp) {
+      final key = '${timestamp.year}-${timestamp.month}-${timestamp.day}';
+      return groupsByDate.putIfAbsent(key, () => _TimelineGroup());
     }
     for (final meal in meals) {
-      groupFor(meal.timestamp, meal.timePeriod).meals.add(meal);
+      groupFor(meal.timestamp).meals.add(meal);
     }
     for (final reading in bloodSugars) {
-      groupFor(reading.timestamp, reading.timePeriod).bloodSugars.add(reading);
+      groupFor(reading.timestamp).bloodSugars.add(reading);
     }
     for (final insulin in insulins) {
-      groupFor(insulin.timestamp, insulin.timePeriod).insulins.add(insulin);
+      groupFor(insulin.timestamp).insulins.add(insulin);
     }
-    final groups = groupsByPeriod.values.toList()..sort((a, b) => b.latestTime.compareTo(a.latestTime));
+    final groups = groupsByDate.values.toList()..sort((a, b) => b.latestTime.compareTo(a.latestTime));
     for (final group in groups) {
       group.meals.sort((a, b) => b.timestamp.compareTo(a.timestamp));
       group.insulins.sort((a, b) => b.timestamp.compareTo(a.timestamp));
       group.bloodSugars.sort((a, b) => b.timestamp.compareTo(a.timestamp));
     }
     return groups.map((group) {
-      final insulin = group.insulins.isEmpty ? '—' : group.insulins.map((item) => item.doseUnits.toStringAsFixed(0)).join(', ');
-      final pre = group.bloodSugars.where((item) => item.readingType == 'Pre-Meal').map((item) => item.value.toStringAsFixed(0)).join(', ');
-      final post = group.bloodSugars.where((item) => item.readingType == 'Post-Meal').map((item) => item.value.toStringAsFixed(0)).join(', ');
-      final detail = group.meals.isEmpty ? 'No meal recorded' : group.meals.map((meal) => '${meal.mealType}: ${meal.foodDescription}').join(' · ');
+      final mealDetails = group.meals.isEmpty
+          ? <String>['No meal recorded']
+          : group.meals.map((meal) => '${meal.mealType}: ${meal.foodDescription}').toList();
+      final insulinDetails = group.insulins.map((item) => 'Insulin ${item.doseUnits.toStringAsFixed(0)}U at ${_formatTime(item.timestamp)}').toList();
+      final glucoseDetails = group.bloodSugars.map((item) => '${item.readingType}: ${item.value.toStringAsFixed(0)} at ${_formatTime(item.timestamp)}').toList();
+      final details = [...mealDetails, ...insulinDetails, ...glucoseDetails];
+
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 7),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Expanded(flex: 4, child: Text('${_formatRange(group.earliestTime, group.latestTime)} · ${group.timePeriod}\n$detail')),
-          Expanded(child: Text(insulin, textAlign: TextAlign.center)),
-          Expanded(child: Text(pre.isEmpty ? '—' : pre, textAlign: TextAlign.center)),
-          Expanded(child: Text(post.isEmpty ? '—' : post, textAlign: TextAlign.center)),
-        ]),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(_formatDate(group.timestamp), style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            ...details.map((detail) => Padding(
+                  padding: const EdgeInsets.only(left: 12, bottom: 4),
+                  child: Text(detail, style: const TextStyle(fontSize: 13, color: Colors.black87)),
+                )),
+          ],
+        ),
       );
     }).toList();
   }
@@ -258,7 +265,15 @@ class _DashboardViewState extends State<DashboardView> {
       await file.writeAsBytes(await pdf.save());
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('PDF saved to ${file.path}')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('PDF saved to ${file.path}'),
+          action: SnackBarAction(
+            label: 'Send via WhatsApp',
+            onPressed: () async => _shareTimelineToWhatsApp(content),
+          ),
+        ),
+      );
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Unable to export PDF: $error')));
@@ -286,10 +301,7 @@ class _DashboardViewState extends State<DashboardView> {
 
   String _number(double? value) => value == null ? '—' : value.toStringAsFixed(2);
   String _formatDate(DateTime time) => '${time.day.toString().padLeft(2, '0')} ${const ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][time.month - 1]} ${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
-  String _formatRange(DateTime start, DateTime end) => start.year == end.year && start.month == end.month && start.day == end.day
-      ? '${_formatDate(start)}–${end.hour.toString().padLeft(2, '0')}:${end.minute.toString().padLeft(2, '0')}'
-      : '${_formatDate(start)}–${_formatDate(end)}';
-  String _period(DateTime time) => time.hour < 12 ? 'morning' : time.hour < 18 ? 'afternoon' : 'night';
+  String _formatTime(DateTime time) => '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
 }
 
 class _DashboardData {
@@ -314,9 +326,6 @@ class _TrendIndicator {
 }
 
 class _TimelineGroup {
-  _TimelineGroup({required this.timePeriod});
-
-  final String timePeriod;
   final List<MealLog> meals = [];
   final List<InsulinLog> insulins = [];
   final List<BloodSugarLog> bloodSugars = [];
@@ -326,6 +335,7 @@ class _TimelineGroup {
         ...insulins.map((item) => item.timestamp),
         ...bloodSugars.map((item) => item.timestamp),
       ];
+  DateTime get timestamp => _times.reduce((a, b) => a.isBefore(b) ? a : b);
   DateTime get earliestTime => _times.reduce((a, b) => a.isBefore(b) ? a : b);
   DateTime get latestTime => _times.reduce((a, b) => a.isAfter(b) ? a : b);
 }

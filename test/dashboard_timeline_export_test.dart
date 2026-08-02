@@ -103,5 +103,6 @@ void main() {
     expect(content.split('Time | Insulin | Pre | Post').length - 1, 1);
     expect(content, contains('Date: 01 Jan 2024'));
     expect(content, contains('Date: 02 Jan 2024'));
+    expect(content.indexOf('Date: 02 Jan 2024'), lessThan(content.indexOf('Date: 01 Jan 2024')));
   });
 }

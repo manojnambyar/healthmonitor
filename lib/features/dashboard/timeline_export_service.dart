@@ -11,25 +11,24 @@ class TimelineExportService {
     final groups = <_TimelineExportGroup>[];
     final map = <String, _TimelineExportGroup>{};
 
-    void addGroup(DateTime timestamp, String? selectedPeriod) {
-      final period = selectedPeriod ?? _period(timestamp);
-      final key = '${timestamp.year}-${timestamp.month}-${timestamp.day}-$period';
-      map.putIfAbsent(key, () => _TimelineExportGroup(timePeriod: period, timestamp: timestamp));
+    void addGroup(DateTime timestamp) {
+      final key = '${timestamp.year}-${timestamp.month}-${timestamp.day}';
+      map.putIfAbsent(key, () => _TimelineExportGroup(timestamp: timestamp));
     }
 
     for (final meal in meals) {
-      addGroup(meal.timestamp, meal.timePeriod);
-      map['${meal.timestamp.year}-${meal.timestamp.month}-${meal.timestamp.day}-${meal.timePeriod ?? _period(meal.timestamp)}']!.meals.add(meal);
+      addGroup(meal.timestamp);
+      map['${meal.timestamp.year}-${meal.timestamp.month}-${meal.timestamp.day}']!.meals.add(meal);
     }
 
     for (final insulin in insulins) {
-      addGroup(insulin.timestamp, insulin.timePeriod);
-      map['${insulin.timestamp.year}-${insulin.timestamp.month}-${insulin.timestamp.day}-${insulin.timePeriod ?? _period(insulin.timestamp)}']!.insulins.add(insulin);
+      addGroup(insulin.timestamp);
+      map['${insulin.timestamp.year}-${insulin.timestamp.month}-${insulin.timestamp.day}']!.insulins.add(insulin);
     }
 
     for (final reading in bloodSugars) {
-      addGroup(reading.timestamp, reading.timePeriod);
-      map['${reading.timestamp.year}-${reading.timestamp.month}-${reading.timestamp.day}-${reading.timePeriod ?? _period(reading.timestamp)}']!.bloodSugars.add(reading);
+      addGroup(reading.timestamp);
+      map['${reading.timestamp.year}-${reading.timestamp.month}-${reading.timestamp.day}']!.bloodSugars.add(reading);
     }
 
     groups.addAll(map.values);
@@ -57,14 +56,16 @@ class TimelineExportService {
       buffer.writeln('Date: ${_formatDateHeader(group.timestamp)}');
       final rows = <String>[];
 
-      for (final meal in group.meals) {
-        rows.add('${_formatTime(meal.timestamp)} | ${_formatInsulin(group.insulins)} | ${_formatPre(group.bloodSugars)} | ${_formatPost(group.bloodSugars)} | ${meal.mealType}: ${meal.foodDescription}');
-      }
+      final insulinRows = group.insulins.map((insulin) => '${_formatTime(insulin.timestamp)} | ${_formatInsulinValue(insulin)} | — | —').toList();
+      final prePostRows = group.bloodSugars.map((reading) => '${_formatTime(reading.timestamp)} | — | ${reading.readingType == 'Pre-Meal' ? reading.value.toStringAsFixed(0) : '—'} | ${reading.readingType == 'Post-Meal' ? reading.value.toStringAsFixed(0) : '—'}').toList();
+      final mealRows = group.meals.map((meal) => '${_formatTime(meal.timestamp)} | — | — | — | ${meal.mealType}: ${meal.foodDescription}').toList();
+
+      rows.addAll(insulinRows);
+      rows.addAll(prePostRows);
+      rows.addAll(mealRows);
 
       if (rows.isEmpty) {
-        if (group.insulins.isNotEmpty || group.bloodSugars.isNotEmpty) {
-          rows.add('${_formatTime(group.insulins.isNotEmpty ? group.insulins.first.timestamp : group.bloodSugars.first.timestamp)} | ${_formatInsulin(group.insulins)} | ${_formatPre(group.bloodSugars)} | ${_formatPost(group.bloodSugars)} | —');
-        }
+        rows.add('— | — | — | —');
       }
 
       if (rows.isNotEmpty) {
@@ -79,23 +80,16 @@ class TimelineExportService {
     return buffer.toString();
   }
 
-  String _period(DateTime time) => time.hour < 12 ? 'morning' : time.hour < 18 ? 'afternoon' : 'night';
-
   String _formatDateHeader(DateTime time) => '${time.day.toString().padLeft(2, '0')} ${const ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][time.month - 1]} ${time.year}';
 
   String _formatTime(DateTime time) => '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
 
-  String _formatInsulin(List<InsulinLog> insulins) => insulins.isEmpty ? '—' : insulins.map((item) => item.doseUnits.toStringAsFixed(1)).join(', ');
-
-  String _formatPre(List<BloodSugarLog> bloodSugars) => bloodSugars.where((item) => item.readingType == 'Pre-Meal').map((item) => item.value.toStringAsFixed(0)).join(', ');
-
-  String _formatPost(List<BloodSugarLog> bloodSugars) => bloodSugars.where((item) => item.readingType == 'Post-Meal').map((item) => item.value.toStringAsFixed(0)).join(', ');
+  String _formatInsulinValue(InsulinLog insulin) => insulin.doseUnits.toStringAsFixed(1);
 }
 
 class _TimelineExportGroup {
-  _TimelineExportGroup({required this.timePeriod, required this.timestamp});
+  _TimelineExportGroup({required this.timestamp});
 
-  final String timePeriod;
   final DateTime timestamp;
   final List<MealLog> meals = [];
   final List<InsulinLog> insulins = [];
